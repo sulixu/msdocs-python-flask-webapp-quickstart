@@ -1,32 +1,46 @@
 import os
-
+import requests
 from flask import (Flask, redirect, render_template, request,
                    send_from_directory, url_for)
 
 app = Flask(__name__)
 
+#
+# to test: curl -X GET -H "access-token: $accessToken" http://127.0.0.1:5000/
+
+
+# api_endpoint = 'https://graph.microsoft.com/v1.0/users'
+# headers = {'Authorization': f'Bearer {bearer_token}'}
+#
+# # Make a request to the API
+# response = requests.get(api_endpoint, headers=headers).json()
+#
+# # Print the response
+# print(json.dumps(response, indent=2))
+
+@app.before_request
+def authenticate():
+    # Get the token from the request headers
+    access_token = request.headers.get("access-token")
+    api_endpoint = 'https://graph.microsoft.com/v1.0/users'
+    headers = {'Authorization': f'Bearer {access_token}'}
+    response = requests.get(api_endpoint, headers=headers)
+    print(response)
+    if response.status_code != 200:
+        return "login failed"
+
 
 @app.route('/')
 def index():
-   print('Request for index page received')
-   return render_template('index.html')
+   print('login succeeded! Request for index page received')
+   return "hi, you are logged in!"
 
-@app.route('/favicon.ico')
-def favicon():
-    return send_from_directory(os.path.join(app.root_path, 'static'),
-                               'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
-@app.route('/hello', methods=['POST'])
-def hello():
-   name = request.form.get('name')
-
-   if name:
-       print('Request for hello page received with name=%s' % name)
-       return render_template('hello.html', name = name)
-   else:
-       print('Request for hello page received with no name or blank name -- redirecting')
-       return redirect(url_for('index'))
+# Backend URI
+@app.route("/backend")
+def backend():
+    return "Authenticated User - Backend Content"
 
 
 if __name__ == '__main__':
-   app.run()
+   app.run(debug=True)
